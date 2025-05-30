@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Task, ParsedTask, BatchParsedTask } from '../types/Task';
 import { ThemeProvider } from '../contexts/ThemeContext';
 import Header from '../components/Header';
 import TaskInput from '../components/TaskInput';
 import TaskBoard from '../components/TaskBoard';
+import TaskOverview from '../components/TaskOverview';
 import MeetingMinutesParser from '../components/MeetingMinutesParser';
 
 const Index = () => {
@@ -86,6 +86,8 @@ const Index = () => {
               who should do it, and when it's due.
             </p>
           </div>
+          
+          <TaskOverview tasks={tasks} />
           
           <TaskInput onTaskCreate={handleTaskCreate} />
           

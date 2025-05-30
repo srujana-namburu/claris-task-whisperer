@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Task, TaskFilters } from '../types/Task';
 import TaskCard from './TaskCard';
@@ -11,7 +12,7 @@ interface TaskBoardProps {
 
 const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, onTaskUpdate, onTaskDelete }) => {
   const [filters, setFilters] = useState<TaskFilters>({});
-  const [sortBy, setSortBy] = useState<'dueDate' | 'priority' | 'createdAt' | 'source'>('dueDate');
+  const [sortBy, setSortBy] = useState<'dueDate' | 'priority' | 'createdAt' | 'source' | 'completed' | 'dueToday' | 'overdue'>('dueDate');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   const assignees = useMemo(() => {
@@ -40,6 +41,9 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, onTaskUpdate, onTaskDelete
     return filtered.sort((a, b) => {
       let comparison = 0;
       
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
       switch (sortBy) {
         case 'dueDate':
           const aDate = a.dueDate?.getTime() || Infinity;
@@ -55,6 +59,23 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, onTaskUpdate, onTaskDelete
           break;
         case 'createdAt':
           comparison = a.createdAt.getTime() - b.createdAt.getTime();
+          break;
+        case 'completed':
+          comparison = Number(a.completed) - Number(b.completed);
+          break;
+        case 'dueToday':
+          const aDueToday = a.dueDate && !a.completed ? 
+            new Date(a.dueDate).setHours(0, 0, 0, 0) === today.getTime() : false;
+          const bDueToday = b.dueDate && !b.completed ? 
+            new Date(b.dueDate).setHours(0, 0, 0, 0) === today.getTime() : false;
+          comparison = Number(bDueToday) - Number(aDueToday);
+          break;
+        case 'overdue':
+          const aOverdue = a.dueDate && !a.completed ? 
+            new Date(a.dueDate).setHours(0, 0, 0, 0) < today.getTime() : false;
+          const bOverdue = b.dueDate && !b.completed ? 
+            new Date(b.dueDate).setHours(0, 0, 0, 0) < today.getTime() : false;
+          comparison = Number(bOverdue) - Number(aOverdue);
           break;
       }
       
@@ -101,7 +122,10 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, onTaskUpdate, onTaskDelete
               { key: 'dueDate', label: 'Due Date' },
               { key: 'priority', label: 'Priority' },
               { key: 'source', label: 'Source' },
-              { key: 'createdAt', label: 'Created' }
+              { key: 'createdAt', label: 'Created' },
+              { key: 'completed', label: 'Completed' },
+              { key: 'dueToday', label: 'Due Today' },
+              { key: 'overdue', label: 'Overdue' }
             ].map(({ key, label }) => (
               <button
                 key={key}

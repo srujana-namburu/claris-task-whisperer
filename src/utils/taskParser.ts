@@ -21,26 +21,23 @@ export const parseNaturalLanguageTask = (input: string, source: 'manual' | 'tran
     taskName = taskName.replace(new RegExp(priorityMatch[0], 'gi'), '').trim();
   }
 
-  // Enhanced assignee patterns - order matters for better matching
+  // Enhanced assignee patterns with better order and exclusions
   const assigneePatterns = [
-    /\b([A-Za-z]+)\s+you\s+(take|handle|do|work\s+on|complete)/i,
-    /\b([A-Za-z]+)\s+(please|should|will|needs?\s+to)\s+/i,
-    /\b([A-Za-z]+)\s+is\s+responsible\s+for/i,
-    /\b([A-Za-z]+)\s+takes?\s+care\s+of/i,
-    /\bassign\s+to\s+([A-Za-z]+)/i,
-    /\bfor\s+([A-Za-z]+)(?:\s+by|\s+due|\s*$)/i,
+    /\b([A-Za-z]+)\s+(you\s+)?(take|handle|do|work\s+on|complete|finish)/i,
+    /\b([A-Za-z]+)\s+(should|will|needs?\s+to|must)\s+/i,
+    /\b([A-Za-z]+)\s+is\s+(responsible\s+for|assigned\s+to|handling)/i,
+    /\bassign(?:ed)?\s+to\s+([A-Za-z]+)/i,
+    /\bfor\s+([A-Za-z]+)(?:\s+by|\s+due|\s+to|\s*$)/i,
     /\b@([A-Za-z]+)/i,
-    /\b([A-Za-z]+)\s+by\s+\d/i, // Name followed by "by" and a date
-    /\b([A-Za-z]+)\s+tomorrow/i,
-    /\b([A-Za-z]+)\s+(today|tonight)/i,
+    /\b([A-Za-z]+)\s+by\s+\d/i,
+    /\b([A-Za-z]+)\s+(tomorrow|today|tonight)/i,
   ];
 
   for (const pattern of assigneePatterns) {
     const match = input.match(pattern);
     if (match && match[1]) {
       const potentialAssignee = match[1].trim();
-      // Exclude common words that aren't names
-      const excludeWords = ['finish', 'complete', 'work', 'task', 'project', 'make', 'create', 'build', 'develop', 'design'];
+      const excludeWords = ['finish', 'complete', 'work', 'task', 'project', 'make', 'create', 'build', 'develop', 'design', 'update', 'fix', 'review', 'test', 'send', 'call', 'email', 'meet'];
       if (!excludeWords.includes(potentialAssignee.toLowerCase()) && potentialAssignee.length > 1) {
         assignee = potentialAssignee.charAt(0).toUpperCase() + potentialAssignee.slice(1).toLowerCase();
         taskName = taskName.replace(new RegExp(match[0], 'gi'), '').trim();
@@ -49,22 +46,41 @@ export const parseNaturalLanguageTask = (input: string, source: 'manual' | 'tran
     }
   }
 
-  // Enhanced due date patterns
-  const datePatterns = [
+  // Enhanced due date and time patterns
+  const dateTimePatterns = [
+    // Date with time patterns
+    /\bby\s+(\d{1,2})(st|nd|rd|th)?\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s+at\s+(\d{1,2}):?(\d{2})?\s*(am|pm)/i,
+    /\bby\s+(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+at\s+(\d{1,2}):?(\d{2})?\s*(am|pm)/i,
+    /\bby\s+(\d{1,2})\/(\d{1,2})\s+at\s+(\d{1,2}):?(\d{2})?\s*(am|pm)/i,
+    
+    // Tomorrow/today with time
+    /\b(tomorrow)\s+(?:at\s+)?(\d{1,2}):?(\d{2})?\s*(am|pm)/i,
+    /\b(today)\s+(?:at\s+)?(\d{1,2}):?(\d{2})?\s*(am|pm)/i,
+    /\b(tonight)\s+(?:at\s+)?(\d{1,2}):?(\d{2})?\s*(am|pm)?/i,
+    
+    // Day names with time
+    /\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s+(?:at\s+)?(\d{1,2}):?(\d{2})?\s*(am|pm)/i,
+    
+    // Time with "by" prefix
+    /\bby\s+(\d{1,2}):?(\d{2})?\s*(am|pm)/i,
+    
+    // Standalone time patterns
+    /\bat\s+(\d{1,2}):?(\d{2})?\s*(am|pm)/i,
+    /\b(\d{1,2}):(\d{2})\s*(am|pm)/i,
+    /\b(\d{1,2})\s*(am|pm)/i,
+    
+    // Date only patterns
     /\bby\s+(\d{1,2})(st|nd|rd|th)?\s+(january|february|march|april|may|june|july|august|september|october|november|december)/i,
     /\bby\s+(\d{1,2})\/(\d{1,2})\/(\d{2,4})/,
     /\bby\s+(\d{1,2})\/(\d{1,2})/,
-    /\b(tomorrow)(?:\s+at\s+(\d{1,2}):?(\d{2})?\s*(am|pm)?)?/i,
-    /\b(today)(?:\s+at\s+(\d{1,2}):?(\d{2})?\s*(am|pm)?)?/i,
+    /\b(tomorrow)/i,
+    /\b(today)/i,
     /\b(tonight)/i,
     /\bnext\s+(week|monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i,
-    /\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)(?:\s+at\s+(\d{1,2}):?(\d{2})?\s*(am|pm)?)?/i,
-    /\b(\d{1,2})(st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i,
-    /\bby\s+end\s+of\s+(week|month)/i,
-    /\bat\s+(\d{1,2}):?(\d{2})?\s*(am|pm)/i,
+    /\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i,
   ];
 
-  for (const pattern of datePatterns) {
+  for (const pattern of dateTimePatterns) {
     const match = input.match(pattern);
     if (match) {
       try {
@@ -73,7 +89,6 @@ export const parseNaturalLanguageTask = (input: string, source: 'manual' | 'tran
         if (matchText.includes('tomorrow')) {
           dueDate = new Date();
           dueDate.setDate(dueDate.getDate() + 1);
-          // Extract time if present
           if (match[2]) {
             let hours = parseInt(match[2]);
             const minutes = match[3] ? parseInt(match[3]) : 0;
@@ -94,14 +109,16 @@ export const parseNaturalLanguageTask = (input: string, source: 'manual' | 'tran
           }
         } else if (matchText.includes('tonight')) {
           dueDate = new Date();
-          dueDate.setHours(20, 0, 0, 0);
-        } else if (matchText.includes('next week')) {
-          dueDate = new Date();
-          dueDate.setDate(dueDate.getDate() + 7);
-        } else if (matchText.includes('end of week')) {
-          dueDate = new Date();
-          const daysUntilFriday = (5 - dueDate.getDay() + 7) % 7;
-          dueDate.setDate(dueDate.getDate() + daysUntilFriday);
+          if (match[2]) {
+            let hours = parseInt(match[2]);
+            const minutes = match[3] ? parseInt(match[3]) : 0;
+            const ampm = match[4]?.toLowerCase();
+            if (ampm === 'pm' && hours !== 12) hours += 12;
+            if (ampm === 'am' && hours === 12) hours = 0;
+            dueDate.setHours(hours, minutes, 0, 0);
+          } else {
+            dueDate.setHours(20, 0, 0, 0);
+          }
         } else {
           // Handle day names
           const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -112,7 +129,6 @@ export const parseNaturalLanguageTask = (input: string, source: 'manual' | 'tran
             const daysUntilTarget = (dayIndex - currentDay + 7) % 7;
             dueDate.setDate(dueDate.getDate() + (daysUntilTarget === 0 ? 7 : daysUntilTarget));
             
-            // Extract time if present
             if (match[2]) {
               let hours = parseInt(match[2]);
               const minutes = match[3] ? parseInt(match[3]) : 0;
@@ -121,6 +137,15 @@ export const parseNaturalLanguageTask = (input: string, source: 'manual' | 'tran
               if (ampm === 'am' && hours === 12) hours = 0;
               dueDate.setHours(hours, minutes, 0, 0);
             }
+          } else if (match[1] && (match[3] || match[4])) {
+            // Handle standalone time patterns
+            dueDate = new Date();
+            let hours = parseInt(match[1]);
+            const minutes = match[2] ? parseInt(match[2]) : 0;
+            const ampm = match[3]?.toLowerCase();
+            if (ampm === 'pm' && hours !== 12) hours += 12;
+            if (ampm === 'am' && hours === 12) hours = 0;
+            dueDate.setHours(hours, minutes, 0, 0);
           }
         }
       } catch {
@@ -131,41 +156,25 @@ export const parseNaturalLanguageTask = (input: string, source: 'manual' | 'tran
     }
   }
 
-  // Extract standalone time patterns if no date was found but time exists
-  if (!dueDate) {
-    const timeMatch = input.match(/\b(\d{1,2}):?(\d{2})?\s*(am|pm|AM|PM)\b/);
-    if (timeMatch) {
-      dueDate = new Date();
-      let hours = parseInt(timeMatch[1]);
-      const minutes = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
-      const ampm = timeMatch[3].toLowerCase();
-      
-      if (ampm === 'pm' && hours !== 12) hours += 12;
-      if (ampm === 'am' && hours === 12) hours = 0;
-      
-      dueDate.setHours(hours, minutes, 0, 0);
-      taskName = taskName.replace(timeMatch[0], '').trim();
-    }
-  }
-
-  // Clean up task name
+  // Clean up task name more thoroughly
   taskName = taskName
     .replace(/\s+/g, ' ')
     .replace(/^(the|a|an)\s+/i, '')
-    .replace(/\bby\s*$/i, '')
-    .replace(/\bfor\s*$/i, '')
+    .replace(/\b(by|for|at|to|and|or|with)\s*$/i, '')
+    .replace(/^(and|or|also|then|next)\s+/i, '')
     .trim();
   
-  // If task name is too short or generic, try to extract a meaningful action
-  if (taskName.length < 3) {
+  // If task name is still poor, try to extract meaningful content
+  if (taskName.length < 5) {
     const actionPatterns = [
-      /\b(complete|finish|work\s+on|develop|create|build|design|implement|fix|update|review|test)\s+([^.!?]*)/i,
+      /\b(complete|finish|work\s+on|develop|create|build|design|implement|fix|update|review|test|send|call|email|meet)\s+([^.!?]*)/i,
+      /\b(make|do|handle|prepare|setup|configure)\s+([^.!?]*)/i,
     ];
     
     for (const pattern of actionPatterns) {
       const match = input.match(pattern);
-      if (match && match[2]) {
-        taskName = match[1] + ' ' + match[2];
+      if (match && match[0]) {
+        taskName = match[0];
         break;
       }
     }
@@ -183,14 +192,17 @@ export const parseNaturalLanguageTask = (input: string, source: 'manual' | 'tran
 export const parseMeetingTranscript = (transcript: string): BatchParsedTask[] => {
   const tasks: BatchParsedTask[] = [];
   
-  // Enhanced sentence splitting to better handle meeting transcripts
+  // Split by multiple delimiters and clean up
   const sentences = transcript
-    .replace(/\./g, '.|')
-    .replace(/\!/g, '!|')
-    .replace(/\?/g, '?|')
+    .replace(/\.\s+/g, '.|')
+    .replace(/\!\s+/g, '!|')
+    .replace(/\?\s+/g, '?|')
+    .replace(/\;\s+/g, ';|')
+    .replace(/\,\s+and\s+/g, ', and|')
+    .replace(/\,\s+also\s+/g, ', also|')
     .split('|')
     .map(s => s.trim())
-    .filter(s => s.length > 10);
+    .filter(s => s.length > 5);
 
   // Enhanced task indicator patterns for meeting transcripts
   const taskIndicators = [
@@ -198,55 +210,43 @@ export const parseMeetingTranscript = (transcript: string): BatchParsedTask[] =>
     /\b([A-Za-z]+)\s+(will|should|needs?\s+to|is\s+responsible\s+for|takes?\s+care\s+of)/i,
     /\b([A-Za-z]+)\s+please\s+(work\s+on|handle|take\s+care\s+of|complete)/i,
     /\bassign\s+([^.!?]*)\s+to\s+([A-Za-z]+)/i,
-    /\b([A-Za-z]+)\s+(by\s+\w+)/i, // Name followed by deadline
+    /\b([A-Za-z]+)\s+(by\s+\w+)/i,
+    /\b([A-Za-z]+)\s+(?:can|could)\s+(?:you\s+)?(handle|take|do|work)/i,
   ];
 
   sentences.forEach((sentence, index) => {
-    // Check if sentence contains task indicators or assignments
     const hasTaskIndicator = taskIndicators.some(pattern => pattern.test(sentence));
     const hasAssignment = /\b([A-Za-z]+)\s+(you\s+)?(take|handle|do|work|complete|finish|by)/i.test(sentence);
     
     if (hasTaskIndicator || hasAssignment || sentence.toLowerCase().includes('by ')) {
       try {
-        // Extract the actual task content more intelligently
-        let taskContent = sentence;
-        
-        // Try to identify the main action/task
-        const actionPatterns = [
-          /(?:you\s+)?(take|handle|work\s+on|complete|finish|develop|create|build|design)\s+([^.!?]*?)(?:\s+by|\s+for|\s*$)/i,
-          /(?:will|should|needs?\s+to)\s+(take|handle|work\s+on|complete|finish|develop|create|build|design)\s+([^.!?]*?)(?:\s+by|\s+for|\s*$)/i,
-          /is\s+responsible\s+for\s+([^.!?]*?)(?:\s+by|\s+for|\s*$)/i,
-          /takes?\s+care\s+of\s+([^.!?]*?)(?:\s+by|\s+for|\s*$)/i,
-        ];
-        
-        for (const pattern of actionPatterns) {
-          const match = sentence.match(pattern);
-          if (match) {
-            const action = match[1] || '';
-            const object = match[2] || match[1] || '';
-            taskContent = (action + ' ' + object).trim();
-            break;
-          }
-        }
-        
         const parsedTask = parseNaturalLanguageTask(sentence, 'transcript');
         
-        // Improve task name if it's too generic
-        if (parsedTask.name.length < 5 || parsedTask.name === 'New Task') {
-          // Try to extract a more meaningful task name from the sentence
-          const meaningfulParts = sentence
-            .replace(/\b([A-Za-z]+)\s+(you\s+)?(take|handle|do|work\s+on)/i, '')
-            .replace(/\bby\s+\w+/i, '')
-            .replace(/\b(will|should|needs?\s+to|is\s+responsible\s+for)/i, '')
+        // Improve task name extraction for meeting context
+        if (parsedTask.name.length < 8 || parsedTask.name === 'New Task') {
+          let improvedName = sentence;
+          
+          // Remove assignee mentions
+          if (parsedTask.assignee !== 'Unassigned') {
+            const assigneePattern = new RegExp(`\\b${parsedTask.assignee}\\s+(you\\s+)?(take|handle|do|work\\s+on|will|should)`, 'gi');
+            improvedName = improvedName.replace(assigneePattern, '');
+          }
+          
+          // Remove common meeting phrases
+          improvedName = improvedName
+            .replace(/\b(you\s+)?(take|handle|do|work\s+on|complete|finish)/gi, '')
+            .replace(/\b(will|should|needs?\s+to|please)/gi, '')
+            .replace(/\bby\s+\w+/gi, '')
+            .replace(/\bat\s+\d+/gi, '')
             .trim();
           
-          if (meaningfulParts.length > 5) {
-            parsedTask.name = meaningfulParts.charAt(0).toUpperCase() + meaningfulParts.slice(1);
+          if (improvedName.length > 5) {
+            parsedTask.name = improvedName.charAt(0).toUpperCase() + improvedName.slice(1);
           }
         }
         
-        // Only add if we found a meaningful assignee or task name
-        if (parsedTask.assignee !== 'Unassigned' || parsedTask.name.length > 5) {
+        // Only add if we have meaningful content
+        if (parsedTask.assignee !== 'Unassigned' || parsedTask.name.length > 8) {
           tasks.push({
             ...parsedTask,
             selected: true,
