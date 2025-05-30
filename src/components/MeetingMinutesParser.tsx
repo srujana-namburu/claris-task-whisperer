@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { BatchParsedTask } from '../types/Task';
-import { parseMeetingTranscript } from '../utils/taskParser';
+import { parseMeetingTranscript, formatDueDate } from '../utils/taskParser';
 
 interface MeetingMinutesParserProps {
   onTasksExtracted: (tasks: BatchParsedTask[]) => void;
