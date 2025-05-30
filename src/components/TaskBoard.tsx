@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Task, TaskFilters } from '../types/Task';
 import TaskCard from './TaskCard';
@@ -12,7 +11,7 @@ interface TaskBoardProps {
 
 const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, onTaskUpdate, onTaskDelete }) => {
   const [filters, setFilters] = useState<TaskFilters>({});
-  const [sortBy, setSortBy] = useState<'dueDate' | 'priority' | 'assignee' | 'createdAt' | 'source'>('dueDate');
+  const [sortBy, setSortBy] = useState<'dueDate' | 'priority' | 'createdAt' | 'source'>('dueDate');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   const assignees = useMemo(() => {
@@ -50,9 +49,6 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, onTaskUpdate, onTaskDelete
         case 'priority':
           const priorityOrder = { P1: 1, P2: 2, P3: 3, P4: 4 };
           comparison = priorityOrder[a.priority] - priorityOrder[b.priority];
-          break;
-        case 'assignee':
-          comparison = a.assignee.localeCompare(b.assignee);
           break;
         case 'source':
           comparison = (a.source || 'manual').localeCompare(b.source || 'manual');
@@ -104,7 +100,6 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ tasks, onTaskUpdate, onTaskDelete
             {[
               { key: 'dueDate', label: 'Due Date' },
               { key: 'priority', label: 'Priority' },
-              { key: 'assignee', label: 'Assignee' },
               { key: 'source', label: 'Source' },
               { key: 'createdAt', label: 'Created' }
             ].map(({ key, label }) => (
